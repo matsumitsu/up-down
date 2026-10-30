@@ -97,8 +97,8 @@ test('elevator. でメンバーが補完され、Tab で確定できる', async 
   const popup = page.locator('.cm-tooltip-autocomplete');
   await expect(popup).toContainText('go_to');
   await expect(popup).toContainText('floor');
+  // 素早く入力して、すぐ Tab を押しても確定できること
   await page.keyboard.type('go');
-  await expect(popup.locator('[aria-selected="true"]')).toContainText('go_to');
   await page.keyboard.press('Tab');
   await expect(page.locator('.cm-content')).toContainText('elevator.go_to(floor)');
   // 引数の部分が選択されているので、そのまま入力して置き換えられる

@@ -49,7 +49,8 @@ export function createEditor(
       basicSetup,
       python(),
       indentUnit.of('    '),
-      autocompletion({ override: [createCompletionSource(handlers.getFeatures)] }),
+      // 候補の表示直後でもすぐ Tab / Enter で確定できるよう、確定の待ち時間を無くす
+      autocompletion({ override: [createCompletionSource(handlers.getFeatures)], interactionDelay: 0 }),
       oneDark,
       lintGutter(),
       keymap.of([indentWithTab]),

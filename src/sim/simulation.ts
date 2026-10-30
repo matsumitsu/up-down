@@ -25,7 +25,8 @@ export interface Elevator {
   queue: number[];
   riders: Passenger[];
   doorTimer: number;
-  idleTimer: number;
+  /** 今回の停止で on_idle をすでに呼んだか */
+  idleNotified: boolean;
   /** 最後に動いた向き（+1 上 / -1 下 / 0） */
   lastDir: number;
 }
@@ -39,6 +40,7 @@ export interface SimConfig {
 /** シミュレーションで起きた出来事の通知先 */
 export interface SimEvents {
   onIdle?(elevator: Elevator): void;
+  onTick?(elevator: Elevator): void;
   onArrive?(elevator: Elevator, floor: number): void;
   onCall?(floor: number, direction: 'up' | 'down'): void;
   onButton?(elevator: Elevator, floor: number): void;
@@ -71,6 +73,7 @@ export class Simulation {
   spawning = true;
 
   private nextPassengerId = 1;
+  private tickEventTimer = 0;
   private readonly rng: Rng;
 
   constructor(
@@ -92,7 +95,7 @@ export class Simulation {
       riders: [],
       doorTimer: 0,
       // 最初の tick ですぐ on_idle が呼ばれるようにする
-      idleTimer: BALANCE.elevator.idleRetriggerSeconds,
+      idleNotified: false,
       lastDir: 0,
     };
     this.elevators.push(e);
@@ -122,7 +125,8 @@ export class Simulation {
   resetQueues(): void {
     for (const e of this.elevators) {
       e.queue = [];
-      if (e.state === 'idle') e.idleTimer = BALANCE.elevator.idleRetriggerSeconds;
+      // 止まっているかごには、新しいコードの on_idle をもう一度呼ぶ
+      if (e.state === 'idle') e.idleNotified = false;
     }
   }
 
@@ -131,6 +135,11 @@ export class Simulation {
     if (this.spawning) this.spawn(dt);
     this.updatePatience(dt);
     for (const e of this.elevators) this.updateElevator(e, dt);
+    this.tickEventTimer += dt;
+    if (this.tickEventTimer >= BALANCE.elevator.tickEventSeconds - 1e-9) {
+      this.tickEventTimer = 0;
+      for (const e of this.elevators) this.events.onTick?.(e);
+    }
   }
 
   private spawn(dt: number): void {
@@ -180,12 +189,11 @@ export class Simulation {
         this.exchange(e);
         if (e.queue.length > 0) {
           this.departOrArrive(e);
-        } else {
-          e.idleTimer += dt;
-          if (e.idleTimer >= BALANCE.elevator.idleRetriggerSeconds) {
-            e.idleTimer = 0;
-            this.events.onIdle?.(e);
-          }
+        } else if (!e.idleNotified) {
+          e.idleNotified = true;
+          this.events.onIdle?.(e);
+          // on_idle の中で予定が入ったら、同じ tick のうちに出発する
+          if (e.queue.length > 0) this.departOrArrive(e);
         }
         return;
       case 'doors':
@@ -196,7 +204,7 @@ export class Simulation {
             this.departOrArrive(e);
           } else {
             e.state = 'idle';
-            e.idleTimer = 0;
+            e.idleNotified = true;
             this.events.onIdle?.(e);
           }
         }

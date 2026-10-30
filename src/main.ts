@@ -73,12 +73,20 @@ const editor = createEditor($('editor'), game.draftCode, {
   onChange: (code) => {
     game.draftCode = code;
   },
+  getFeatures: () => game.features,
 });
 $('apply').addEventListener('click', apply);
+// エディタの外（ショップなど）にフォーカスがあっても Ctrl+Enter / Cmd+Enter で適用できるようにする
+document.addEventListener('keydown', (ev) => {
+  if (ev.defaultPrevented || ev.key !== 'Enter' || !(ev.ctrlKey || ev.metaKey) || ev.isComposing) return;
+  ev.preventDefault();
+  apply();
+});
 
 const reference = $('reference');
 renderReference(reference, game.features);
 const shop = new Shop($('shop'), game, () => {
+  if (editor.getCode() !== game.draftCode) editor.replaceCode(game.draftCode);
   renderReference(reference, game.features);
   updateStats();
   save();

@@ -76,3 +76,50 @@ test('セーブされ、再読み込みしても続きから遊べる', async ({
   await page.reload();
   await expect(page.getByTestId('building-info')).toContainText('定員 6');
 });
+
+test('Ctrl+Enter で適用できる（エディタの外にフォーカスがあっても）', async ({ page }) => {
+  await setCode(page, 'def on_idle(elevator):\n    elevator.go_to(1)\n');
+  await page.keyboard.press('ControlOrMeta+Enter');
+  await expect(page.getByTestId('script-errors')).toContainText('適用しました');
+  // 改行が挿入されていないこと
+  await expect(page.locator('.cm-line')).toHaveCount(3);
+
+  await setCode(page, 'def on_idle(elevator):\n    elevator.go_to(\n');
+  await page.getByTestId('building').click();
+  await page.keyboard.press('ControlOrMeta+Enter');
+  await expect(page.getByTestId('script-errors')).toContainText('行目');
+});
+
+test('elevator. でメンバーが補完され、Tab で確定できる', async ({ page }) => {
+  await setCode(page, 'def on_idle(elevator):\n    ');
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type('elevator.');
+  const popup = page.locator('.cm-tooltip-autocomplete');
+  await expect(popup).toContainText('go_to');
+  await expect(popup).toContainText('floor');
+  // 素早く入力して、すぐ Tab を押しても確定できること
+  await page.keyboard.type('go');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.cm-content')).toContainText('elevator.go_to(floor)');
+  // 引数の部分が選択されているので、そのまま入力して置き換えられる
+  await page.keyboard.type('2');
+  await expect(page.locator('.cm-content')).toContainText('elevator.go_to(2)');
+});
+
+test('API を解放すると、イベント関数がエディタに追加される', async ({ page }) => {
+  await page.evaluate(() => {
+    (window as never as { __upDown: { money: number } }).__upDown.money = 1_000;
+  });
+  await page.getByTestId('buy-calls').click();
+  await expect(page.locator('.cm-content')).toContainText('def on_call(floor, direction):');
+  await page.getByTestId('apply').click();
+  await expect(page.getByTestId('script-errors')).toContainText('適用しました');
+});
+
+test('自動インデントは4スペース', async ({ page }) => {
+  await setCode(page, 'def on_idle(elevator):');
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('pass');
+  await expect(page.locator('.cm-line').nth(1)).toHaveText('    pass');
+});

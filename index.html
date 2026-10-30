@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UP/DOWN — エレベーター制御ゲーム</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>UP<span>/</span>DOWN</h1>
+      <div class="stats">
+        <span class="stat">💰 <b data-testid="money" id="money">0</b></span>
+        <span class="stat">🚶 運んだ <b data-testid="delivered" id="delivered">0</b></span>
+        <span class="stat">💢 帰った <b data-testid="gave-up" id="gave-up">0</b></span>
+      </div>
+      <div class="controls">
+        <span class="label">速さ</span>
+        <button class="speed" data-speed="1">×1</button>
+        <button class="speed" data-speed="2">×2</button>
+        <button class="speed" data-speed="4">×4</button>
+        <button id="reset" class="danger" title="セーブを消して最初から">リセット</button>
+      </div>
+    </header>
+    <main class="layout">
+      <section class="panel building-panel">
+        <div class="panel-title">ビル <span id="building-info" data-testid="building-info"></span></div>
+        <div class="canvas-wrap"><canvas id="building" data-testid="building"></canvas></div>
+      </section>
+      <section class="panel code-panel">
+        <div class="panel-title">
+          制御コード
+          <span class="hint">Ctrl+Enter でも適用</span>
+          <button id="apply" data-testid="apply" class="primary">適用</button>
+        </div>
+        <div id="editor" data-testid="editor"></div>
+        <div id="errors" data-testid="script-errors" class="errors"></div>
+        <details class="console" open>
+          <summary>コンソール（print の出力）</summary>
+          <pre id="console" data-testid="console"></pre>
+        </details>
+        <details class="reference">
+          <summary>使える API</summary>
+          <div id="reference"></div>
+        </details>
+      </section>
+      <section class="panel shop-panel">
+        <div class="panel-title">ショップ</div>
+        <div id="shop" data-testid="shop"></div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

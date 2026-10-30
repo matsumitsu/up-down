@@ -1,8 +1,8 @@
 name: CI / Deploy
 
 on:
+  # チェックはすべてのブランチで実行し、デプロイは main のときだけ行う
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 

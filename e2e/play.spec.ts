@@ -123,3 +123,21 @@ test('自動インデントは4スペース', async ({ page }) => {
   await page.keyboard.type('pass');
   await expect(page.locator('.cm-line').nth(1)).toHaveText('    pass');
 });
+
+test('「使える API」タブで一覧が見られ、解放すると 🔒 が外れる', async ({ page }) => {
+  await expect(page.getByTestId('reference')).toBeHidden();
+  await page.getByTestId('tab-reference').click();
+  const reference = page.getByTestId('reference');
+  await expect(reference).toBeVisible();
+  await expect(page.getByTestId('shop')).toBeHidden();
+  await expect(reference).toContainText('def on_idle(elevator):');
+  await expect(reference.locator('.ref', { hasText: 'def on_call' })).toContainText('🔒');
+
+  await page.evaluate(() => {
+    (window as never as { __upDown: { money: number } }).__upDown.money = 1_000;
+  });
+  await page.getByTestId('tab-shop').click();
+  await page.getByTestId('buy-calls').click();
+  await page.getByTestId('tab-reference').click();
+  await expect(reference.locator('.ref', { hasText: 'def on_call' })).not.toContainText('🔒');
+});

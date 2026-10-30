@@ -38,14 +38,14 @@
           <summary>コンソール（print の出力）</summary>
           <pre id="console" data-testid="console"></pre>
         </details>
-        <details class="reference">
-          <summary>使える API</summary>
-          <div id="reference"></div>
-        </details>
       </section>
-      <section class="panel shop-panel">
-        <div class="panel-title">ショップ</div>
-        <div id="shop" data-testid="shop"></div>
+      <section class="panel side-panel">
+        <div class="panel-title tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="shop" data-testid="tab-shop">ショップ</button>
+          <button class="tab" role="tab" data-tab="reference" data-testid="tab-reference">使える API</button>
+        </div>
+        <div id="shop" class="tab-body" data-testid="shop"></div>
+        <div id="reference" class="tab-body" data-testid="reference" hidden></div>
       </section>
     </main>
     <script type="module" src="/src/main.ts"></script>

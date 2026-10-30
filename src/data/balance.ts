@@ -79,6 +79,8 @@ export const BALANCE = {
     maxStepsPerCall: 20_000,
     /** 関数呼び出しの最大深さ */
     maxCallDepth: 64,
+    /** 1台のかごに入れられる行き先の予定の最大件数 */
+    maxQueueLength: 100,
     /** コンソールに残すログの最大行数 */
     maxLogLines: 100,
   },

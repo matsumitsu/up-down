@@ -14,6 +14,7 @@ const COLORS = {
   carIdle: '#5a6478',
   text: '#ffffff',
   queueMark: '#ffcc4d',
+  target: '#ffcc4d',
 };
 
 export class BuildingRenderer {
@@ -78,14 +79,50 @@ export class BuildingRenderer {
       ctx.fillStyle = COLORS.shaft;
       ctx.fillRect(x, top, shaftW, floors * floorH);
 
-      // 行き先の予定を小さな印で示す
-      ctx.fillStyle = COLORS.queueMark;
-      for (const q of e.queue) {
-        ctx.fillRect(x + shaftW - 6, floorY(q) - floorH / 2 - 3, 6, 6);
+      const carH = floorH * 0.8;
+      const carTop = (y: number) => floorY(y) - carH - floorH * 0.05;
+
+      // 2番目以降の予定は、シャフトの右端に順番の数字で示す
+      ctx.font = `bold ${Math.max(9, Math.min(12, floorH * 0.3))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      e.queue.slice(1, 10).forEach((q, k) => {
+        const qy = floorY(q) - floorH / 2;
+        ctx.fillStyle = COLORS.queueMark;
+        ctx.globalAlpha = 0.55;
+        ctx.fillRect(x + shaftW - 13, qy - 7, 13, 14);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#10131a';
+        ctx.fillText(String(k + 2), x + shaftW - 6.5, qy + 1);
+      });
+
+      // 今向かっている階：枠で囲み、かごから線を引く
+      const target = e.queue[0];
+      if (target !== undefined) {
+        const ty = carTop(target);
+        ctx.strokeStyle = COLORS.target;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(x + 2, ty, shaftW - 4, carH);
+        ctx.setLineDash([]);
+        if (Math.abs(target - e.y) > 1e-6) {
+          const cx = x + shaftW / 2;
+          const fromY = target > e.y ? carTop(e.y) : carTop(e.y) + carH;
+          const toY = target > e.y ? ty + carH : ty;
+          ctx.globalAlpha = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(cx, fromY);
+          ctx.lineTo(cx, toY);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          // 枠の中に向き（▲ 上へ / ▼ 下へ）と行き先の階を書く
+          ctx.fillStyle = COLORS.target;
+          ctx.font = `bold ${Math.max(10, Math.min(14, carH * 0.4))}px system-ui, sans-serif`;
+          ctx.fillText(`${target > e.y ? '▲' : '▼'}${target}F`, cx, ty + carH / 2);
+        }
+        ctx.lineWidth = 1;
       }
 
-      const carH = floorH * 0.8;
-      const cy = floorY(e.y) - carH - floorH * 0.05;
+      const cy = carTop(e.y);
       ctx.fillStyle = e.state === 'doors' ? COLORS.carDoors : e.state === 'idle' ? COLORS.carIdle : COLORS.car;
       ctx.fillRect(x + 3, cy, shaftW - 6, carH);
 
@@ -105,6 +142,7 @@ export class BuildingRenderer {
       ctx.textAlign = 'center';
       ctx.font = `bold ${Math.min(12, carH * 0.35)}px system-ui, sans-serif`;
       ctx.fillText(`${e.riders.length}/${cap}`, x + shaftW / 2, cy + carH - Math.min(8, carH * 0.2));
+
     });
 
     // 待っている客（色は残りの忍耐、数字は行き先）

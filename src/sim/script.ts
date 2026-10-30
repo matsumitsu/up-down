@@ -172,7 +172,15 @@ export class ScriptHost {
   }
 
   private pushQueue(e: Elevator, floor: number, front: boolean, line: number): void {
-    if (e.queue.length >= 100) throw new ScriptError('行き先の予定が多すぎます（上限 100）', line);
+    // 同じ階を続けて予定に入れても意味がないので無視する（on_tick で毎秒 go_to しても溜まらない）
+    if ((front ? e.queue[0] : e.queue[e.queue.length - 1]) === floor) return;
+    const max = BALANCE.script.maxQueueLength;
+    if (e.queue.length >= max) {
+      throw new ScriptError(
+        `行き先の予定が ${max} 件を超えました。go_to は呼ぶたびに予定の最後へ階を追加します（elevator.queue で確認、elevator.stop() で消去できます）`,
+        line,
+      );
+    }
     if (front) e.queue.unshift(floor);
     else e.queue.push(floor);
   }

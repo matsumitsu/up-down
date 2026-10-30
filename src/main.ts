@@ -83,6 +83,19 @@ document.addEventListener('keydown', (ev) => {
   apply();
 });
 
+// ---- 右側パネルのタブ ----
+const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
+tabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach((t) => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', String(active));
+      $(t.dataset.tab!).hidden = !active;
+    });
+  });
+});
+
 const reference = $('reference');
 renderReference(reference, game.features);
 const shop = new Shop($('shop'), game, () => {

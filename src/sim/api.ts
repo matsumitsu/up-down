@@ -70,7 +70,7 @@ export const EVENT_DEFS: EventDef[] = [
 ];
 
 export const ELEVATOR_MEMBERS: MemberDef[] = [
-  { name: 'go_to', kind: 'method', params: ['floor'], description: '行き先の予定の最後に階を追加', feature: null },
+  { name: 'go_to', kind: 'method', params: ['floor'], description: '行き先の予定の最後に階を追加（最後と同じ階なら何もしない）', feature: null },
   { name: 'floor', kind: 'property', description: '今いる（いちばん近い）階', feature: null },
   { name: 'load', kind: 'property', description: '乗っている人数', feature: null },
   { name: 'capacity', kind: 'property', description: '定員', feature: null },

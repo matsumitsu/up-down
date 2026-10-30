@@ -121,10 +121,13 @@ export class Simulation {
     return p;
   }
 
-  /** すべてのかごの予定を消す（コードを適用し直したときに使う） */
+  /**
+   * コードを適用し直したときに、古いコードが入れた予定を消す。
+   * 移動中のかごは、今向かっている階だけは残す（途中の階で急に止まって巡回が崩れないように）。
+   */
   resetQueues(): void {
     for (const e of this.elevators) {
-      e.queue = [];
+      e.queue = e.state === 'moving' && e.queue.length > 0 ? [e.queue[0]] : [];
       // 止まっているかごには、新しいコードの on_idle をもう一度呼ぶ
       if (e.state === 'idle') e.idleNotified = false;
     }

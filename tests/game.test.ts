@@ -151,6 +151,38 @@ describe('イベントの呼ばれ方', () => {
     expect(g.script.logs).toEqual(['0', '1', '0', '1', '0', '1']);
   });
 
+  it('移動中に適用し直しても、今向かっている階には行く（途中で止まらない）', () => {
+    const g = quietGame();
+    g.money = 1e6;
+    for (let i = 0; i < 3; i++) g.buy('floors');
+    g.applyCode('def on_idle(e):\n    if e.floor == 0:\n        e.go_to(5)\n        e.go_to(1)');
+    g.advance(1.5);
+    expect(g.sim.elevators[0].state).toBe('moving');
+    g.applyCode('def on_idle(e):\n    print("idle", e.floor)');
+    g.advance(10);
+    // 5 階には着くが、古いコードの残りの予定（1 階）は消えている
+    expect(g.script.logs).toEqual(['idle 5']);
+  });
+
+  it('go_to で同じ階を続けて入れても予定は溜まらない', () => {
+    const g = quietGame();
+    g.applyCode('def on_tick(e):\n    e.go_to(2)\n    e.go_to(2)\n    print(len(e.queue))');
+    g.money = 1e6;
+    g.buy('queue');
+    g.advance(1.01);
+    expect(g.script.logs).toEqual(['1']);
+  });
+
+  it('予定が上限を超えるとわかりやすいエラーになる', () => {
+    const g = quietGame();
+    g.money = 1e6;
+    g.buy('loops');
+    g.applyCode('def on_tick(e):\n    for i in range(60):\n        e.go_to(1)\n        e.go_to(2)');
+    g.advance(1.01);
+    expect(g.script.runtimeError?.message).toContain('go_to は呼ぶたびに予定の最後へ');
+    expect(g.script.runtimeError?.line).toBe(3);
+  });
+
   it('on_tick で止まっているかごを動かせる', () => {
     const g = quietGame();
     g.applyCode('def on_tick(e):\n    if e.floor == 0:\n        e.go_to(1)');

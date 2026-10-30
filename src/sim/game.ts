@@ -3,6 +3,7 @@
  * UI はこのクラスだけを見ればよい。DOM には依存しない。
  */
 import { BALANCE, DEFAULT_CODE, type FeatureId, type LevelUpgradeId } from '../data/balance';
+import { addEventStubs } from './api';
 import { SAVE_VERSION, type SaveData } from './save';
 import { ScriptHost, type ScriptErrorInfo } from './script';
 import { Simulation } from './simulation';
@@ -112,6 +113,8 @@ export class Game {
       this.applyStats();
     } else {
       this.features.add(id as FeatureId);
+      // 新しく使えるようになったイベント関数のひな形を、書きかけのコードに足す
+      this.draftCode = addEventStubs(this.draftCode, id as FeatureId);
     }
     this.script.refreshBuiltins();
     return true;

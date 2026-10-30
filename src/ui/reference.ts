@@ -1,33 +1,31 @@
-/** 「使える API」一覧。解放状態に応じて 🔒 を付ける */
+/** 「使える API」一覧。src/sim/api.ts の定義から作り、解放状態に応じて 🔒 を付ける */
 import type { FeatureId } from '../data/balance';
+import { ELEVATOR_MEMBERS, EVENT_DEFS, GLOBAL_DEFS, KEYWORD_DEFS } from '../sim/api';
 import { featureDef } from '../sim/upgrades';
 
 interface RefItem {
   code: string;
   text: string;
-  feature?: FeatureId;
+  feature: FeatureId | null;
 }
 
-const ITEMS: RefItem[] = [
-  { code: 'def on_idle(elevator):', text: 'かごが空いて止まったとき（その後も1秒ごと）' },
-  { code: 'def on_arrive(elevator, floor):', text: 'かごが階に着いて扉が開いたとき' },
-  { code: 'def on_call(floor, direction):', text: '客が現れたとき（direction は "up" / "down"）', feature: 'calls' },
-  { code: 'def on_button(elevator, floor):', text: '客が乗って行き先ボタンを押したとき', feature: 'buttons' },
-  { code: 'elevator.go_to(floor)', text: '行き先の予定の最後に階を追加' },
-  { code: 'elevator.floor / .load / .capacity / .id', text: '今の階・乗っている人数・定員・番号' },
-  { code: 'elevator.pressed', text: '車内で押されている階のリスト', feature: 'buttons' },
-  { code: 'elevator.queue', text: '行き先の予定（コピー）', feature: 'queue' },
-  { code: 'elevator.go_now(floor)', text: '予定の先頭に割り込む', feature: 'queue' },
-  { code: 'elevator.stop()', text: '予定をすべて消す', feature: 'queue' },
-  { code: 'floors / elevators', text: '階数・全エレベーターのリスト' },
-  { code: 'waiting(floor) / calls()', text: 'その階で待つ人数・客がいる階のリスト', feature: 'calls' },
-  { code: 'for / while / break / continue / range()', text: 'ループ構文', feature: 'loops' },
-  { code: 'print len abs min max int str round', text: '組み込み関数' },
-];
+function items(): RefItem[] {
+  const sig = (params?: string[]) => (params ? `(${params.join(', ')})` : '');
+  return [
+    ...EVENT_DEFS.map((e) => ({ code: `def ${e.name}${sig(e.params)}:`, text: e.description, feature: e.feature })),
+    ...ELEVATOR_MEMBERS.map((m) => ({ code: `elevator.${m.name}${sig(m.params)}`, text: m.description, feature: m.feature })),
+    ...GLOBAL_DEFS.map((g) => ({ code: `${g.name}${sig(g.params)}`, text: g.description, feature: g.feature })),
+    {
+      code: KEYWORD_DEFS.filter((k) => k.feature === 'loops').map((k) => k.name).join(' / '),
+      text: 'ループ構文',
+      feature: 'loops',
+    },
+  ];
+}
 
 export function renderReference(container: HTMLElement, features: Set<FeatureId>): void {
   container.replaceChildren(
-    ...ITEMS.map((item) => {
+    ...items().map((item) => {
       const row = document.createElement('div');
       const locked = item.feature && !features.has(item.feature);
       row.className = locked ? 'ref locked' : 'ref';

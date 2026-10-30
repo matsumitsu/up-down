@@ -50,8 +50,8 @@ export const BALANCE = {
     capacityPerLevel: 2,
     /** 扉が開いている時間（秒） */
     doorSeconds: 1.0,
-    /** 空いている間、on_idle を再び呼ぶ間隔（秒） */
-    idleRetriggerSeconds: 1.0,
+    /** on_tick を呼ぶ間隔（秒） */
+    tickEventSeconds: 1.0,
   },
 
   passengers: {
@@ -152,7 +152,7 @@ export const BALANCE = {
 };
 
 /** 最初からエディタに入っているコード */
-export const DEFAULT_CODE = `# かごが空いたら呼ばれる
+export const DEFAULT_CODE = `# かごが止まって、行き先の予定がなくなったら呼ばれる
 def on_idle(elevator):
     # 1つ上の階へ。いちばん上まで来たらロビー(0階)へ戻る
     if elevator.floor < floors - 1:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE, DEFAULT_CODE } from '../src/data/balance';
+import { addEventStubs } from '../src/sim/api';
 import { Game } from '../src/sim/game';
 import { deserialize, loadFrom, saveTo, serialize, type KeyValueStorage } from '../src/sim/save';
 import { rewardFor } from '../src/sim/simulation';
@@ -117,6 +118,66 @@ describe('コードの適用', () => {
   });
 });
 
+describe('イベントの呼ばれ方', () => {
+  it('on_idle は止まって予定がなくなったときに1回だけ呼ばれる', () => {
+    const g = quietGame();
+    g.applyCode('def on_idle(e):\n    print("idle", e.floor)');
+    g.advance(10);
+    expect(g.script.logs).toEqual(['idle 0']);
+  });
+
+  it('動いた後に止まると、また on_idle が呼ばれる', () => {
+    const g = quietGame();
+    g.applyCode('n = 0\ndef on_idle(e):\n    n += 1\n    print("idle", e.floor)\n    if n == 1:\n        e.go_to(2)');
+    g.advance(10);
+    expect(g.script.logs).toEqual(['idle 0', 'idle 2']);
+  });
+
+  it('コードを適用し直すと、止まっているかごの on_idle がもう一度呼ばれる', () => {
+    const g = quietGame();
+    g.applyCode('def on_idle(e):\n    pass');
+    g.advance(3);
+    g.applyCode('def on_idle(e):\n    print("新しいコード")');
+    g.advance(3);
+    expect(g.script.logs).toEqual(['新しいコード']);
+  });
+
+  it('on_tick は1秒ごとに、かごごとに呼ばれる', () => {
+    const g = quietGame();
+    g.money = 1e6;
+    g.buy('elevators');
+    g.applyCode('def on_tick(e):\n    print(e.id)');
+    g.advance(3.01);
+    expect(g.script.logs).toEqual(['0', '1', '0', '1', '0', '1']);
+  });
+
+  it('on_tick で止まっているかごを動かせる', () => {
+    const g = quietGame();
+    g.applyCode('def on_tick(e):\n    if e.floor == 0:\n        e.go_to(1)');
+    g.advance(4);
+    expect(g.sim.elevators[0].y).toBe(1);
+  });
+});
+
+describe('イベント関数のひな形', () => {
+  it('API を解放すると、そのイベント関数が pass だけで追加される', () => {
+    const g = quietGame();
+    g.money = 1e6;
+    g.draftCode = 'def on_idle(e):\n    pass\n';
+    g.buy('calls');
+    expect(g.draftCode).toBe('def on_idle(e):\n    pass\n\ndef on_call(floor, direction):\n    pass\n');
+    g.buy('buttons');
+    expect(g.draftCode).toContain('\n\ndef on_button(elevator, floor):\n    pass\n');
+    // ひな形を足したコードはそのまま適用できる
+    expect(g.applyCode(g.draftCode)).toEqual([]);
+  });
+
+  it('すでに定義されていれば追加しない・関数を持たない機能では何もしない', () => {
+    expect(addEventStubs('def on_call(a, b):\n    pass', 'calls')).toBe('def on_call(a, b):\n    pass');
+    expect(addEventStubs('x = 1', 'loops')).toBe('x = 1');
+  });
+});
+
 describe('機能の解放', () => {
   it('未解放のイベントや API はエラーになり、解放すると使える', () => {
     const g = quietGame();
@@ -188,7 +249,7 @@ describe('アップグレード', () => {
   it('階を増やすと floors の値も変わる', () => {
     const g = quietGame();
     g.money = 100_000;
-    g.applyCode('def on_idle(e):\n    print(floors)');
+    g.applyCode('def on_tick(e):\n    print(floors)');
     g.advance(1.1);
     g.buy('floors');
     g.advance(1.1);

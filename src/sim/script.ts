@@ -15,6 +15,7 @@ import {
   type Value,
 } from './lang/interpreter';
 import { featureDef } from './upgrades';
+import { EVENT_DEFS } from './api';
 import { Simulation, type Elevator } from './simulation';
 
 export interface ScriptErrorInfo {
@@ -25,12 +26,7 @@ export interface ScriptErrorInfo {
 }
 
 /** イベント名と、必要な機能 */
-export const EVENTS: Record<string, FeatureId | null> = {
-  on_idle: null,
-  on_arrive: null,
-  on_call: 'calls',
-  on_button: 'buttons',
-};
+export const EVENTS: Record<string, FeatureId | null> = Object.fromEntries(EVENT_DEFS.map((e) => [e.name, e.feature]));
 
 function lockedMessage(what: string, feature: FeatureId): string {
   return `${what} はまだ使えません（ショップで「${featureDef(feature).name}」を解放してください）`;
@@ -60,6 +56,7 @@ export class ScriptHost {
       ...this.sim.events,
       onIdle: (e) => this.dispatch('on_idle', [this.elevatorObject(e)]),
       onArrive: (e, floor) => this.dispatch('on_arrive', [this.elevatorObject(e), floor]),
+      onTick: (e) => this.dispatch('on_tick', [this.elevatorObject(e)]),
       onCall: (floor, dir) => this.dispatch('on_call', [floor, dir]),
       onButton: (e, floor) => this.dispatch('on_button', [this.elevatorObject(e), floor]),
     };
